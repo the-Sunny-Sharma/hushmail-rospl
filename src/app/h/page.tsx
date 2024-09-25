@@ -138,7 +138,7 @@ export default function LandingPage() {
 
           <div className="mt-8 text-center">
             <button className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 ease-in-out transform hover:scale-105">
-              <Link href={"/"}> Continue to Your Homepage</Link>
+              <Link href={"/h/home"}> Continue to Your Homepage</Link>
             </button>
           </div>
         </div>
