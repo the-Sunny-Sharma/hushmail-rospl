@@ -1,8 +1,8 @@
 "use client";
 
-// import { useAuth } from "@/context/AuthProviderClient";
 import { Clock, Eye, EyeOff, MessageSquare, Plus } from "lucide-react";
 import Link from "next/link";
+import axios from "axios";
 import { useEffect, useState } from "react";
 
 interface Post {
@@ -22,79 +22,68 @@ interface DashboardStats {
   latestResponse: string;
 }
 
-// Define CurrentUser type
-// interface CurrentUser {
-//   username: string;
-//   profilePicture: string;
-// }
-
 export default function Dashboard() {
-  // const { user } = useAuth();
-  // const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
-  // const [currentUser, setCurrentUser] = useState<CurrentUser>({
-  //   username: "",
-  //   profilePicture:
-  //     "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png",
-  // });
-
-  // useEffect(() => {
-  //   if (user) {
-  //     setCurrentUser({
-  //       username: user.email,
-  //       profilePicture: user.picture || currentUser.profilePicture,
-  //     });
-  //   }
-  // }, [user]);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
-    // In a real application, these would be API calls
-    // For this example, we'll use mock data
-    const mockStats: DashboardStats = {
-      totalPosts: 15,
-      totalResponses: 47,
-      activePosts: 8,
-      publicPosts: 10,
-      privatePosts: 5,
-      latestResponse: "2 hours ago",
-    };
+    try {
+      // Fetch data from your API (replace with the actual endpoint)
+      const response = await axios.get("/api/post/my"); // Ensure correct API route
 
-    const mockPosts: Post[] = [
-      {
-        id: "1",
-        content: "What's your favorite programming language?",
-        isPublic: true,
-        responseCount: 12,
-        timestamp: "3 days ago",
-      },
-      {
-        id: "2",
-        content: "How do you stay productive while working from home?",
-        isPublic: false,
-        responseCount: 8,
-        timestamp: "1 week ago",
-      },
-      {
-        id: "3",
-        content: "What's the best book you've read recently?",
-        isPublic: true,
-        responseCount: 15,
-        timestamp: "2 weeks ago",
-      },
-    ];
+      // Extract data directly from response
+      const data = response.data;
 
-    setStats(mockStats);
-    setPosts(mockPosts);
+      if (data.success) {
+        const userPosts = data.userPosts;
+
+        // Extract stats from posts
+        const totalPosts = userPosts.length;
+        const totalResponses = userPosts.reduce(
+          (acc: number, post: Post) => acc + post.responseCount,
+          0
+        );
+        const activePosts = userPosts.filter(
+          (post: Post) => post.acceptingResponses
+        ).length;
+        const publicPosts = userPosts.filter(
+          (post: Post) => post.isPublic
+        ).length;
+        const privatePosts = totalPosts - publicPosts;
+        const latestResponse = new Date(
+          Math.max(
+            ...userPosts.map((post: Post) => new Date(post.timestamp).getTime())
+          )
+        ).toLocaleString();
+
+        // Update stats state
+        setStats({
+          totalPosts,
+          totalResponses,
+          activePosts,
+          publicPosts,
+          privatePosts,
+          latestResponse,
+        });
+
+        // Format posts for UI
+        const formattedPosts = userPosts.map((post: Post) => ({
+          id: post._id,
+          content: post.content,
+          isPublic: post.isPublic,
+          responseCount: post.responseCount,
+          timestamp: new Date(post.timestamp).toLocaleString(),
+        }));
+        setPosts(formattedPosts);
+      }
+    } catch (error: unknown) {
+      console.error("Failed to fetch dashboard data:", error);
+    }
   };
-
-  // const toggleSidebar = () => {
-  //   setIsSidebarOpen(!isSidebarOpen);
-  // };
 
   return (
     <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -138,21 +127,12 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0 bg-yellow-500 rounded-md p-3">
                 <Clock className="h-6 w-6 text-white" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Active Posts
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {stats?.activePosts}
-                  </dd>
-                </dl>
               </div>
             </div>
           </div>
@@ -221,7 +201,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Your Posts</h2>
           <Link
-            href="/create-post"
+            href="/h/create-feed"
             className="flex items-center text-indigo-600 hover:text-indigo-900"
           >
             <Plus className="w-5 h-5 mr-1" />
@@ -233,7 +213,7 @@ export default function Dashboard() {
             {posts.map((post) => (
               <li key={post.id}>
                 <Link
-                  href={`/post/${post.id}`}
+                  href={`/mypost/${post.id}`}
                   className="block hover:bg-gray-50"
                 >
                   <div className="px-4 py-4 sm:px-6">
