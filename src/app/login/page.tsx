@@ -5,7 +5,7 @@ import React from "react";
 
 export default async function loginPage() {
   const session = await auth();
-  if (session?.user) redirect("/");
+  if (session?.user) redirect("/h");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

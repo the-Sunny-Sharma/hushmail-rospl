@@ -9,7 +9,7 @@ export const GET = auth(async function GET(req) {
     // Ensure the user is authenticated
     if (!req.auth) {
       return NextResponse.json(
-        { message: "Not authenticated" },
+        { success: false, message: "Not authenticated" },
         { status: 401 }
       );
     }
@@ -21,13 +21,20 @@ export const GET = auth(async function GET(req) {
 
     // Return the list of public posts
     return NextResponse.json(
-      { message: "Public posts retrieved successfully", posts: publicPosts },
+      {
+        success: true,
+        message: "Public posts retrieved successfully",
+        posts: publicPosts,
+      },
       { status: 200 }
     );
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { message: "An error occurred while fetching public posts" },
+      {
+        success: false,
+        message: "An error occurred while fetching public posts",
+      },
       { status: 500 }
     );
   }

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CredentialsSignUp } from "@/actions/signup";
 import { toast } from "sonner";
+import { googleSignin } from "@/actions/googleProvider";
 
 const SignUpForm = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -162,7 +163,7 @@ const SignUpForm = () => {
         </div>
 
         <div className="mt-6">
-          <form action="">
+          <form action={googleSignin}>
             <button
               type="submit"
               className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"

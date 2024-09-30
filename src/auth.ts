@@ -98,15 +98,22 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       if (account?.provider === "google") {
         try {
           const { email, name, image, id } = user;
+
+          if (!email) {
+            throw new AuthError("Email is required");
+          }
           await connectToDatabase();
           // Only create user if they do not exist
           const alreadyUser = await User.findOne({ email });
           if (!alreadyUser) {
+            const username = email.split("@")[0]; // You can modify this logic as per your requirements
+
             await User.create({
               email,
               name,
               image,
               googleId: id,
+              username,
               // Don't include password field as it's not required
             });
           }

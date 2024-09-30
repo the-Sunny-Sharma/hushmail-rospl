@@ -1,63 +1,79 @@
 "use client";
 
+import { useAuth } from "@/context/AuthProviderClient";
+import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock, User } from "lucide-react";
+import { Clock } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Image from "next/image"; // Importing Next.js Image component
-import { useAuth } from "@/context/AuthProviderClient";
 
 interface Post {
-  id: number;
+  _id: string;
   content: string;
   username: string | null;
+  profilePicture: string | null;
   timestamp: string;
 }
 
-const samplePosts: Post[] = [
-  {
-    id: 1,
-    content: "Great app! Love the anonymity feature.",
-    username: "JohnDoe",
-    timestamp: "2 minutes ago",
-  },
-  {
-    id: 2,
-    content: "How do I change my privacy settings?",
-    username: null,
-    timestamp: "5 minutes ago",
-  },
-  {
-    id: 3,
-    content: "The interface is so intuitive!",
-    username: "TechEnthusiast",
-    timestamp: "10 minutes ago",
-  },
-  {
-    id: 4,
-    content: "Can we have a dark mode option?",
-    username: null,
-    timestamp: "15 minutes ago",
-  },
-  {
-    id: 5,
-    content: "Just discovered this app, it's amazing!",
-    username: "NewUser123",
-    timestamp: "20 minutes ago",
-  },
-];
-
 export default function LandingPage() {
   const { user } = useAuth();
+  const [posts, setPosts] = useState<Post[]>([]);
   const [currentPostIndex, setCurrentPostIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [lastTimestamp, setLastTimestamp] = useState<string | null>(null);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+
+  const hardcodedFallbackPosts: Post[] = [
+    {
+      _id: "1",
+      content: "This is a fallback post.",
+      username: "Fallback User",
+      profilePicture: null,
+      timestamp: new Date().toISOString(),
+    },
+    // Add more hardcoded posts as needed
+  ];
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `/api/post/chunks?limit=5${
+          lastTimestamp ? `&lastTimestamp=${lastTimestamp}` : ""
+        }`
+      );
+      if (response.data.success && response.data.posts.length > 0) {
+        const newPosts = response.data.posts;
+        setPosts((prevPosts) => [...prevPosts, ...newPosts]);
+        setLastTimestamp(newPosts[newPosts.length - 1].timestamp); // Update the last timestamp
+        setHasMorePosts(true);
+      } else {
+        // If no more posts, stop fetching and use fallback posts
+        setHasMorePosts(false);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
+    fetchPosts();
     const timer = setInterval(() => {
-      setCurrentPostIndex((prevIndex) => (prevIndex + 1) % samplePosts.length);
+      setCurrentPostIndex((prevIndex) => (prevIndex + 1) % posts.length);
     }, 6000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [posts.length]);
+
+  // Trigger fetching when nearing the end of current posts
+  useEffect(() => {
+    if (currentPostIndex === posts.length - 1 && hasMorePosts && !loading) {
+      fetchPosts(); // Fetch the next chunk when near the end of current posts
+    }
+  }, [currentPostIndex, posts.length, hasMorePosts, loading]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -70,28 +86,24 @@ export default function LandingPage() {
             <div className="flex items-center">
               {user && user.name ? (
                 <div className="flex flex-row">
-                  {" "}
-                  <div>
-                    <p className="mr-2">
-                      Welcome, <span className="text-lg">{user.name}</span>
-                    </p>
-                  </div>
+                  <p className="mr-2">
+                    Welcome, <span className="text-lg">{user.name}</span>
+                  </p>
                   <Image
                     src={
-                      user.picture
-                        ? user.picture
-                        : "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png"
+                      user.picture ||
+                      "https://upload.wikimedia.org/wikipedia/commons/2/2c/Default_pfp.svg"
                     }
                     alt="User Avatar"
                     width={32}
                     height={32}
                     className="rounded-full"
-                  />{" "}
+                  />
                 </div>
               ) : (
                 <Link
                   href="/login"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-sm font-medium text-white rounded-md"
                 >
                   Login
                 </Link>
@@ -105,37 +117,45 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto">
           <div className="bg-white shadow-lg rounded-lg overflow-hidden h-64">
             <AnimatePresence mode="wait">
-              <motion.div
-                key={currentPostIndex}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -50 }}
-                transition={{ duration: 0.5 }}
-                className="p-6 h-full flex flex-col justify-between"
-              >
-                <div>
-                  <p className="text-lg text-gray-800 mb-4">
-                    {samplePosts[currentPostIndex].content}
-                  </p>
-                  <div className="flex items-center text-sm text-gray-600">
-                    {samplePosts[currentPostIndex].username ? (
-                      <User className="w-4 h-4 mr-2" />
-                    ) : (
-                      <span className="w-4 h-4 mr-2 bg-gray-300 rounded-full" />
-                    )}
-                    <span>
-                      {samplePosts[currentPostIndex].username || "Anonymous"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <Clock className="w-4 h-4 mr-2" />
-                  <span>{samplePosts[currentPostIndex].timestamp}</span>
-                </div>
-              </motion.div>
+              {(posts.length > 0 ? posts : hardcodedFallbackPosts).map(
+                (post, index) =>
+                  index === currentPostIndex && (
+                    <motion.div
+                      key={post._id}
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -50 }}
+                      transition={{ duration: 0.5 }}
+                      className="p-6 h-full flex flex-col justify-between"
+                    >
+                      <div>
+                        <p className="text-lg text-gray-800 mb-4">
+                          {post.content}
+                        </p>
+                        <div className="flex items-center text-sm text-gray-600">
+                          {post.profilePicture ? (
+                            <Image
+                              src={post.profilePicture}
+                              alt="Profile Picture"
+                              width={16}
+                              height={16}
+                              className="rounded-full mr-2"
+                            />
+                          ) : (
+                            <span className="w-4 h-4 mr-2 bg-gray-300 rounded-full" />
+                          )}
+                          <span>{post.username || "Anonymous"}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="w-4 h-4 mr-2" />
+                        <span>{new Date(post.timestamp).toLocaleString()}</span>
+                      </div>
+                    </motion.div>
+                  )
+              )}
             </AnimatePresence>
           </div>
-
           <div className="mt-8 text-center">
             <button className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 ease-in-out transform hover:scale-105">
               <Link href={"/h/home"}> Continue to Your Homepage</Link>
